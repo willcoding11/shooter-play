@@ -1,0 +1,21 @@
+{
+  "name": "shooter",
+  "productName": "Shooter",
+  "version": "1.0.0",
+  "description": "Desktop window for the private Shooter game",
+  "author": "willcoding11",
+  "main": "main.cjs",
+  "devDependencies": {
+    "electron": "45.3.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "io.github.willcoding11.shooter",
+    "productName": "Shooter",
+    "files": ["main.cjs", "preload.cjs", "start.html", "config.json", "icon.png"],
+    "directories": { "output": "dist" },
+    "win": { "target": "zip", "icon": "icon.ico", "artifactName": "Shooter-Windows.${ext}" },
+    "mac": { "target": { "target": "zip", "arch": ["universal"] }, "icon": "icon.png", "category": "public.app-category.action-games", "identity": "-", "artifactName": "Shooter-Mac.${ext}" },
+    "linux": { "target": "AppImage", "icon": "icon.png", "category": "Game", "artifactName": "Shooter-Linux.${ext}" }
+  }
+}

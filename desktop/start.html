@@ -1,0 +1,67 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'" />
+  <title>Shooter</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: radial-gradient(circle at 50% 30%, #2a2a33, #121216); color: #eee; font: 15px/1.5 system-ui, 'Segoe UI', sans-serif; }
+    body { display: flex; align-items: center; justify-content: center; }
+    .panel { width: 440px; padding: 28px 30px; background: rgba(0, 0, 0, 0.45); border-radius: 10px; }
+    h1 { margin: 0 0 4px; color: #ff3b3b; font-style: italic; letter-spacing: 4px; font-size: 38px; }
+    p { margin: 0 0 16px; color: #aaa; }
+    #status { color: #ddd; min-height: 1.5em; }
+    input { width: 100%; box-sizing: border-box; padding: 10px 12px; font-size: 15px; border: 0; border-radius: 6px; background: #f2f0eb; color: #111; }
+    button { margin-top: 10px; width: 100%; padding: 11px; font-size: 17px; font-weight: 700; letter-spacing: 2px; border: 0; border-radius: 6px; background: #ff3b3b; color: #fff; cursor: pointer; }
+    button.alt { background: #3a3a44; font-size: 13px; letter-spacing: 0; font-weight: 500; }
+    .err { color: #ff8080; min-height: 1.5em; margin-top: 10px; }
+    .update { display: none; margin-top: 12px; padding: 8px 10px; border-radius: 6px; background: #3b3220; color: #ffd37a; font-size: 13px; cursor: pointer; }
+    .keys { margin-top: 14px; color: #888; font-size: 12px; }
+    #manual { display: none; }
+  </style>
+</head>
+<body>
+  <div class="panel">
+    <h1>SHOOTER</h1>
+    <p id="status">Looking for the game…</p>
+    <div id="manual">
+      <input id="url" placeholder="https://some-words.trycloudflare.com" spellcheck="false" />
+      <button id="go">PLAY</button>
+      <button id="host" class="alt">Play the game running on this PC</button>
+    </div>
+    <div class="err" id="err"></div>
+    <div class="update" id="update"></div>
+    <div class="keys">F11 fullscreen · F2 back to this screen · Alt+F4 quit</div>
+  </div>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const q = new URLSearchParams(location.search);
+    if (q.get('error')) $('err').textContent = q.get('error');
+    const showManual = (msg) => { $('status').textContent = msg; $('manual').style.display = 'block'; $('url').focus(); $('url').select(); };
+    const go = () => { const u = $('url').value.trim(); if (u) window.shooterApp.go(u); else $('err').textContent = 'Paste a link first.'; };
+    $('go').onclick = go;
+    $('host').onclick = () => window.shooterApp.go('http://localhost:7777');
+    $('url').addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
+    $('update').onclick = () => window.shooterApp.openPage();
+
+    const failed = q.get('failed') || '';
+    async function find(again = false) {
+      const d = await window.shooterApp.defaults();
+      if (d.update) { $('update').style.display = 'block'; $('update').textContent = `A new app version (${d.update}) is out; you have ${d.version}. Click to download.`; }
+      $('url').value = d.host ? 'http://localhost:7777' : (d.remote || d.last);
+      if (q.get('manual')) return showManual('Paste the game link, or press PLAY:');
+      // on the host's PC, play locally (fastest); everyone else joins the published link
+      const target = d.host ? 'http://localhost:7777' : d.remote;
+      if (target && (target !== failed || again)) {
+        $('status').textContent = 'Joining the game…';
+        setTimeout(() => window.shooterApp.go(target), 500);
+      } else if (failed) {
+        // host offline: check again every 10 s (same link once more, or the new one they publish)
+        showManual('The game is offline. Waiting for the host… (or paste a link)');
+        setTimeout(() => find(true), 10000);
+      } else showManual("Couldn't find the game online. Paste the link from the host:");
+    }
+    find();
+  </script>
+</body>
+</html>
